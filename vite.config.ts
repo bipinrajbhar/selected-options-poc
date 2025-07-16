@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 5173,
     proxy: {
       "/api": {
         target: "http://44.197.228.204:5000",
@@ -16,6 +16,11 @@ export default defineConfig({
         target: "https://stg2.rhnonprod.com",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/products-api/, "/rh/api"),
+      },
+      // Proxy for Netlify functions in development
+      "/.netlify/functions": {
+        target: "http://localhost:8888",
+        changeOrigin: true,
       },
     },
   },

@@ -83,15 +83,19 @@ function App() {
       setProductError(null);
       try {
         console.log("Fetching product with ID:", productId);
-        const { data } = await axios.get<Product[]>(
-          `/products-api/products/v1?ids=${productId}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            withCredentials: false,
-          }
-        );
+
+        // Use different endpoints for development vs production
+        const isDevelopment = import.meta.env.DEV;
+        const productUrl = isDevelopment
+          ? `/products-api/products/v1?ids=${productId}`
+          : `/.netlify/functions/products?productId=${productId}`;
+
+        const { data } = await axios.get<Product[]>(productUrl, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: false,
+        });
 
         console.log("Product API response:", data);
         const product = data?.[0];
@@ -136,15 +140,18 @@ function App() {
       setOptionsLoading(true);
       setOptionsError(null);
       try {
-        const response = await axios.get<ApiResponse>(
-          `/api/ng-all-options?productId=${productId}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            withCredentials: false,
-          }
-        );
+        // Use different endpoints for development vs production
+        const isDevelopment = import.meta.env.DEV;
+        const optionsUrl = isDevelopment
+          ? `/api/ng-all-options?productId=${productId}`
+          : `/.netlify/functions/options?productId=${productId}`;
+
+        const response = await axios.get<ApiResponse>(optionsUrl, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: false,
+        });
 
         // Extract options from the nested response structure
         const allOptions: Option[] = [];

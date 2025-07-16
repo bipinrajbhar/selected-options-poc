@@ -84,7 +84,13 @@ function App() {
       try {
         console.log("Fetching product with ID:", productId);
         const { data } = await axios.get<Product[]>(
-          `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${productId}`
+          `/products-api/products/v1?ids=${productId}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: false,
+          }
         );
 
         console.log("Product API response:", data);
@@ -104,9 +110,15 @@ function App() {
             url: error.config?.url,
             data: error.response?.data,
           });
-          setProductError(
-            `Failed to load product: ${error.response?.status} ${error.response?.statusText}`
-          );
+          if (error.code === "ERR_NETWORK" || error.message.includes("CORS")) {
+            setProductError(
+              "CORS error: API not accessible from browser. Please check API configuration."
+            );
+          } else {
+            setProductError(
+              `Failed to load product: ${error.response?.status} ${error.response?.statusText}`
+            );
+          }
         } else {
           setProductError("Failed to load product");
         }
@@ -125,7 +137,13 @@ function App() {
       setOptionsError(null);
       try {
         const response = await axios.get<ApiResponse>(
-          `http://44.197.228.204:5000/ng-all-options?productId=${productId}`
+          `/api/ng-all-options?productId=${productId}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: false,
+          }
         );
 
         // Extract options from the nested response structure

@@ -82,10 +82,12 @@ function App() {
       setProductLoading(true);
       setProductError(null);
       try {
+        console.log("Fetching product with ID:", productId);
         const { data } = await axios.get<Product[]>(
           `/products-api/products/v1?ids=${productId}`
         );
 
+        console.log("Product API response:", data);
         const product = data?.[0];
 
         if (product) {
@@ -95,14 +97,26 @@ function App() {
         }
       } catch (error) {
         console.error("Error fetching product:", error);
-        setProductError("Failed to load product");
+        if (axios.isAxiosError(error)) {
+          console.error("Axios error details:", {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            url: error.config?.url,
+            data: error.response?.data,
+          });
+          setProductError(
+            `Failed to load product: ${error.response?.status} ${error.response?.statusText}`
+          );
+        } else {
+          setProductError("Failed to load product");
+        }
       } finally {
         setProductLoading(false);
       }
     };
 
     fetchProduct();
-  }, []);
+  }, [productId]);
 
   // Fetch options from the API
   useEffect(() => {
@@ -138,7 +152,7 @@ function App() {
     };
 
     fetchOptions();
-  }, []);
+  }, [productId]);
 
   const handleDropdownChange = (optionType: string, optionId: string) => {
     const newSelectedOptions = {

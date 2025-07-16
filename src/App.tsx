@@ -84,7 +84,7 @@ function App() {
       try {
         console.log("Fetching product with ID:", productId);
         const { data } = await axios.get<Product[]>(
-          `/products-api/products/v1?ids=${productId}`
+          `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${productId}`
         );
 
         console.log("Product API response:", data);
@@ -125,7 +125,7 @@ function App() {
       setOptionsError(null);
       try {
         const response = await axios.get<ApiResponse>(
-          `/api/ng-all-options?productId=${productId}`
+          `http://44.197.228.204:5000/ng-all-options?productId=${productId}`
         );
 
         // Extract options from the nested response structure

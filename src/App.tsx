@@ -155,9 +155,7 @@ function App() {
         ? ""
         : import.meta.env.VITE_OPTIONS_API_BASE ||
           "https://cors-anywhere.herokuapp.com/http://44.197.228.204:5000";
-      const optionsUrl = isDevelopment
-        ? `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`
-        : `${optionsBase}/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
+      const optionsUrl = `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
 
       const response = await axios.get<ApiResponse>(optionsUrl, {
         headers: {

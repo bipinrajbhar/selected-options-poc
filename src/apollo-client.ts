@@ -1,7 +1,7 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from "@apollo/client";
 
 const httpLink = createHttpLink({
-  uri: "/api/graphql", // GraphQL endpoint
+  uri: "https://intc.rhnonprod.com/rh-experience-layer-v1-intc/graphql", // GraphQL endpoint
 });
 
 export const client = new ApolloClient({

@@ -1,13 +1,10 @@
 import { useQueryState } from "nuqs";
 import { useState, useEffect } from "react";
+import { useQuery } from "@apollo/client";
+import { GET_PRODUCT } from "./graphql/queries";
 import axios from "axios";
 
-interface Product {
-  id: string;
-  displayName: string;
-  imageUrl: string;
-  // Add other product properties as needed
-}
+// Product interface is now defined by GraphQL schema
 
 interface Option {
   option_id_s: string;
@@ -80,14 +77,27 @@ function App() {
   const [options, setOptions] = useState<Option[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
 
-  const [product] = useState<Product | null>({
-    id: "prod34521304",
-    displayName: "Sample Product",
-    imageUrl:
-      "https://media.restorationhardware.com/is/image/rhis/prod6490266_E46747666_F_Frank_RHR?$PDP-IS-992$",
+  // GraphQL query for product data
+  const {
+    data: productData,
+    loading: productLoading,
+    error: productError,
+  } = useQuery(GET_PRODUCT, {
+    variables: {
+      productId,
+      filter: null,
+      userType: "ANONYMOUS",
+      siteId: "RH",
+      currencyCode: "USA",
+      measureSystem: "metrics",
+      locale: "en-US",
+      postalCode: "94925",
+      countryCode: "US",
+    },
+    skip: !productId,
   });
-  const [productLoading] = useState(false);
-  const [productError] = useState<string | null>(null);
+
+  const product = productData?.product;
 
   // Fetch product data from REST API
   // useEffect(() => {
@@ -232,7 +242,7 @@ function App() {
             Product Unavailable
           </h2>
           <p className="text-gray-600 font-light text-lg leading-relaxed font-body">
-            {productError}
+            {productError?.message || "Failed to load product"}
           </p>
           <button
             onClick={() => window.location.reload()}

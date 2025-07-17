@@ -94,14 +94,9 @@ function App() {
 
         // Use different endpoints for development vs production
         const isDevelopment = import.meta.env.DEV;
-        const apiBase = isDevelopment
-          ? ""
-          : import.meta.env.VITE_API_BASE ||
-            "https://stg2.rhnonprod.com/rh/api";
-
         const productUrl = isDevelopment
           ? `/products-api/products/v1?ids=${productId}`
-          : `${apiBase}/products/v1?ids=${productId}`;
+          : `/api/products?ids=${productId}`;
 
         const { data } = await axios.get<Product[]>(productUrl, {
           headers: {

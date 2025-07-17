@@ -1,10 +1,10 @@
 export default async function handler(req, res) {
-  const { productId, selectedOptions } = req.query;
-  const backendUrl = `http://44.197.228.204:5000/ng-all-options?productId=${encodeURIComponent(
-    productId || ""
-  )}&selectedOptions=${encodeURIComponent(selectedOptions || "")}`;
+  const { ids } = req.query;
+  const backendUrl = `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${encodeURIComponent(
+    ids || ""
+  )}`;
 
-  console.log("Proxying request to:", backendUrl);
+  console.log("Proxying products request to:", backendUrl);
 
   try {
     const response = await fetch(backendUrl, {

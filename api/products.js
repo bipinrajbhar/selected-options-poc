@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const { ids } = req.query;
-  const backendUrl = `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${encodeURIComponent(
+  const backendUrl = `https://rh.com/rh/api/products/v1?ids=${encodeURIComponent(
     ids || ""
   )}`;
 
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         Accept: "application/json",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      timeout: 10000, // 10 second timeout
+      timeout: 15000, // 15 second timeout
       redirect: "follow", // Follow redirects
     });
 
@@ -46,11 +46,20 @@ export default async function handler(req, res) {
     console.error("Proxy error:", error.message);
     console.error("Error stack:", error.stack);
     console.error("Error name:", error.name);
+    console.error("Error cause:", error.cause);
+
+    // Try to provide more specific error information
+    let errorDetails = error.message;
+    if (error.cause) {
+      errorDetails += ` (Cause: ${error.cause.message || error.cause})`;
+    }
+
     res.status(500).json({
       error: "Proxy error",
-      details: error.message,
+      details: errorDetails,
       backendUrl: backendUrl,
       errorType: error.name,
+      timestamp: new Date().toISOString(),
     });
   }
 }

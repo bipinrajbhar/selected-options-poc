@@ -14,7 +14,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
       "/products-api": {
-        target: "https://stg2.rhnonprod.com",
+        target: "https://rh.com",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/products-api/, "/rh/api"),
       },

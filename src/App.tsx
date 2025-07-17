@@ -25,6 +25,7 @@ interface OptionBucket {
     hits: {
       hits: Array<{
         _source: Option;
+        status: string;
       }>;
     };
   };
@@ -38,12 +39,20 @@ interface ApiResponse {
       };
     };
   };
+  sku_response: {
+    hits: {
+      hits: Array<{
+        _source: { id: string };
+      }>;
+    };
+  };
 }
 
 function App() {
   const [productId] = useQueryState("productId", {
     defaultValue: "prod34521304",
   });
+  const [sku, setSku] = useState<string | null>(null);
 
   console.log({ productId });
 
@@ -70,7 +79,6 @@ function App() {
 
   const [options, setOptions] = useState<Option[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
-  const [optionsError, setOptionsError] = useState<string | null>(null);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [productLoading, setProductLoading] = useState(false);
@@ -97,7 +105,6 @@ function App() {
           withCredentials: false,
         });
 
-        console.log("Product API response:", data);
         const product = data?.[0];
 
         if (product) {
@@ -134,50 +141,59 @@ function App() {
     fetchProduct();
   }, [productId]);
 
-  // Fetch options from the API
-  useEffect(() => {
-    const fetchOptions = async () => {
-      setOptionsLoading(true);
-      setOptionsError(null);
-      try {
-        // Use different endpoints for development vs production
-        const isDevelopment = import.meta.env.DEV;
-        const optionsUrl = isDevelopment
-          ? `/api/ng-all-options?productId=${productId}`
-          : `/.netlify/functions/options?productId=${productId}`;
+  const fetchOptions = async (selectedOptionIds: string) => {
+    setOptionsLoading(true);
+    try {
+      // Use different endpoints for development vs production
+      const isDevelopment = import.meta.env.DEV;
+      const optionsUrl = isDevelopment
+        ? `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`
+        : `/.netlify/functions/options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
 
-        const response = await axios.get<ApiResponse>(optionsUrl, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: false,
+      const response = await axios.get<ApiResponse>(optionsUrl, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: false,
+      });
+
+      // Extract options from the nested response structure
+      const allOptions: Option[] = [];
+      const buckets =
+        response.data?.options_detail?.aggregations?.by_type?.buckets || [];
+
+      buckets?.forEach((bucket) => {
+        const bucketOptions = bucket?.options?.hits?.hits || [];
+        bucketOptions?.forEach((hit) => {
+          if (hit?.status !== "unavailable") {
+            allOptions.push(hit._source);
+          }
         });
+      });
 
-        // Extract options from the nested response structure
-        const allOptions: Option[] = [];
-        const buckets =
-          response.data?.options_detail?.aggregations?.by_type?.buckets || [];
+      const hits = response.data?.sku_response?.hits?.hits;
 
-        buckets.forEach((bucket) => {
-          const bucketOptions = bucket.options?.hits?.hits || [];
-          bucketOptions.forEach((hit) => {
-            if (hit._source) {
-              allOptions.push(hit._source);
-            }
-          });
-        });
-
-        setOptions(allOptions);
-      } catch (error) {
-        console.error("Error fetching options:", error);
-        setOptionsError("Failed to load options");
-      } finally {
-        setOptionsLoading(false);
+      if (hits?.length <= 3) {
+        setSku(hits[0]?._source?.id);
       }
-    };
 
-    fetchOptions();
-  }, [productId]);
+      setOptions(allOptions);
+    } catch (error) {
+      console.error("Error fetching options:", error);
+    } finally {
+      setOptionsLoading(false);
+    }
+  };
+
+  // Fetch options from the API
+  const selectedOptions = Object.values(selectedOptionsByType).join(",");
+  useEffect(() => {
+    fetchOptions(selectedOptions);
+  }, [selectedOptions]);
+
+  useEffect(() => {
+    console.log("selectedOptionIds", selectedOptionIds);
+  }, [selectedOptionIds]);
 
   const handleDropdownChange = (optionType: string, optionId: string) => {
     const newSelectedOptions = {
@@ -193,98 +209,130 @@ function App() {
     setSelectedOptionIds(allSelectedIds);
   };
 
-  if (productLoading) return <div>Loading product...</div>;
-  if (productError) return <div>Error: {productError}</div>;
+  if (productLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="w-12 h-12 border-2 border-gray-300 -black rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-600 font-light text-lg font-body">
+            Loading...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (productError) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-8">
+        <div className="text-center space-y-8 max-w-lg">
+          <h2 className="text-3xl font-light text-gray-900 font-display">
+            Product Unavailable
+          </h2>
+          <p className="text-gray-600 font-light text-lg leading-relaxed font-body">
+            {productError}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center justify-center bg-black text-white px-8 py-3 text-sm font-medium hover:bg-gray-800 transition-colors font-body"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
-    return <div>No product found</div>;
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-8">
+        <div className="text-center space-y-8 max-w-lg">
+          <h2 className="text-3xl font-light text-gray-900 font-display">
+            Product Not Found
+          </h2>
+          <p className="text-gray-600 font-light text-lg leading-relaxed font-body">
+            The requested product could not be located.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <img
-          src={product.imageUrl}
-          alt={product.displayName}
-          style={{ width: "200px", height: "200px" }}
-        />
-        <span>{product.displayName}</span>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-0">
+          {/* Product Details Section - RH Style */}
+          <div className="flex  items-start justify-center p-8 lg:p-16 space-y-12 gap-10">
+            {/* Product Title */}
+            <img
+              className="aspect-square object-contain shrink-0 w-96"
+              src={product.imageUrl}
+              alt={product.displayName}
+            />
+            <div className="space-y-6">
+              <h1 className="text-4xl lg:text-5xl font-light text-gray-900 leading-tight tracking-wide font-display mb-10">
+                {product.displayName}
+              </h1>
+              {/* Product Options */}
+              <div className="space-y-8">
+                <div className="space-y-8">
+                  {/* Group options by type */}
+                  {(() => {
+                    const groupedOptions = options.reduce((acc, option) => {
+                      const type = option.option_type_name_s;
+                      if (!acc[type]) {
+                        acc[type] = [];
+                      }
+                      acc[type].push(option);
+                      return acc;
+                    }, {} as Record<string, Option[]>);
 
-        {/* Options Dropdown */}
-        <div style={{ marginTop: "20px" }}>
-          <h3>Product Options</h3>
-          {optionsLoading && <div>Loading options...</div>}
-          {optionsError && <div style={{ color: "red" }}>{optionsError}</div>}
-          {!optionsLoading && !optionsError && (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-            >
-              {/* Group options by type */}
-              {(() => {
-                const groupedOptions = options.reduce((acc, option) => {
-                  const type = option.option_type_name_s;
-                  if (!acc[type]) {
-                    acc[type] = [];
-                  }
-                  acc[type].push(option);
-                  return acc;
-                }, {} as Record<string, Option[]>);
+                    return (
+                      <div className="space-y-8 flex gap-8 flex-wrap">
+                        {Object.entries(groupedOptions).map(
+                          ([type, typeOptions]) => (
+                            <div key={type} className="space-y-4">
+                              <label className="text-lg font-medium text-gray-900 capitalize tracking-wide font-body">
+                                {type}
+                              </label>
+                              <select
+                                value={selectedOptionsByType[type] || ""}
+                                onChange={(e) =>
+                                  handleDropdownChange(type, e.target.value)
+                                }
+                                className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-gray-900 font-light focus:border-black focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-body"
+                                disabled={optionsLoading}
+                              >
+                                <option value="">Select {type}</option>
+                                {typeOptions.map((option) => (
+                                  <option
+                                    key={option.option_id_s}
+                                    value={option.option_id_s}
+                                  >
+                                    {option.option_value_s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
 
-                return Object.entries(groupedOptions).map(
-                  ([type, typeOptions]) => (
-                    <div
-                      key={type}
-                      style={{
-                        border: "1px solid #ddd",
-                        padding: "15px",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <h4 style={{ margin: "0 0 10px 0", color: "#333" }}>
-                        {type}
-                      </h4>
-                      <select
-                        value={selectedOptionsByType[type] || ""}
-                        onChange={(e) =>
-                          handleDropdownChange(type, e.target.value)
-                        }
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: "4px",
-                          border: "1px solid #ccc",
-                          fontSize: "14px",
-                          minWidth: "200px",
-                        }}
-                      >
-                        <option value="">Select {type}</option>
-                        {typeOptions.map((option) => (
-                          <option
-                            key={option.option_id_s}
-                            value={option.option_id_s}
-                          >
-                            {option.option_value_s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )
-                );
-              })()}
+              {/* SKU Display */}
+              {sku && (
+                <div className="space-y-4 pt-8  border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 font-body">
+                    SKU: {sku}
+                  </h3>
+                </div>
+              )}
             </div>
-          )}
-
-          {selectedOptionIds.length > 0 && (
-            <div
-              style={{
-                marginTop: "15px",
-                padding: "15px",
-                backgroundColor: "#f0f0f0",
-                borderRadius: "8px",
-              }}
-            >
-              <strong>Selected Options:</strong> {selectedOptionIds.join(", ")}
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

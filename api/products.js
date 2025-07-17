@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const { ids } = req.query;
-  const backendUrl = `http://stg2.rhnonprod.com/rh/api/products/v1?ids=${encodeURIComponent(
+  const backendUrl = `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${encodeURIComponent(
     ids || ""
   )}`;
 
@@ -13,8 +13,11 @@ export default async function handler(req, res) {
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "Vercel-Proxy/1.0",
+        Accept: "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
       },
       timeout: 10000, // 10 second timeout
+      redirect: "follow", // Follow redirects
     });
 
     if (!response.ok) {

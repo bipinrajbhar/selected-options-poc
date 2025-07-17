@@ -1,12 +1,13 @@
 export default async function handler(req, res) {
   const { ids } = req.query;
-  const backendUrl = `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${encodeURIComponent(
+  const backendUrl = `http://stg2.rhnonprod.com/rh/api/products/v1?ids=${encodeURIComponent(
     ids || ""
   )}`;
 
   console.log("Proxying products request to:", backendUrl);
 
   try {
+    console.log("Attempting to fetch from:", backendUrl);
     const response = await fetch(backendUrl, {
       method: "GET",
       headers: {
@@ -40,10 +41,13 @@ export default async function handler(req, res) {
     res.status(200).send(data);
   } catch (error) {
     console.error("Proxy error:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Error name:", error.name);
     res.status(500).json({
       error: "Proxy error",
       details: error.message,
       backendUrl: backendUrl,
+      errorType: error.name,
     });
   }
 }

@@ -150,11 +150,6 @@ function App() {
     setOptionsLoading(true);
     try {
       // Use different endpoints for development vs production
-      const isDevelopment = import.meta.env.DEV;
-      const optionsBase = isDevelopment
-        ? ""
-        : import.meta.env.VITE_OPTIONS_API_BASE ||
-          "https://cors-anywhere.herokuapp.com/http://44.197.228.204:5000";
       const optionsUrl = `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
 
       const response = await axios.get<ApiResponse>(optionsUrl, {

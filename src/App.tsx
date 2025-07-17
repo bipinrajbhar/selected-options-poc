@@ -263,7 +263,7 @@ function App() {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-0">
+        <div>
           {/* Product Details Section - RH Style */}
           <div className="flex  items-start justify-center p-8 lg:p-16 space-y-12 gap-10">
             {/* Product Title */}

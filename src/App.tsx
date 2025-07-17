@@ -94,9 +94,14 @@ function App() {
 
         // Use different endpoints for development vs production
         const isDevelopment = import.meta.env.DEV;
+        const apiBase = isDevelopment
+          ? ""
+          : import.meta.env.VITE_API_BASE ||
+            "https://stg2.rhnonprod.com/rh/api";
+
         const productUrl = isDevelopment
           ? `/products-api/products/v1?ids=${productId}`
-          : `https://stg2.rhnonprod.com/rh/api/products/v1?ids=${productId}`;
+          : `${apiBase}/products/v1?ids=${productId}`;
 
         const { data } = await axios.get<Product[]>(productUrl, {
           headers: {
@@ -146,9 +151,13 @@ function App() {
     try {
       // Use different endpoints for development vs production
       const isDevelopment = import.meta.env.DEV;
+      const optionsBase = isDevelopment
+        ? ""
+        : import.meta.env.VITE_OPTIONS_API_BASE ||
+          "https://cors-anywhere.herokuapp.com/http://44.197.228.204:5000";
       const optionsUrl = isDevelopment
         ? `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`
-        : `http://44.197.228.204:5000/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
+        : `${optionsBase}/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
 
       const response = await axios.get<ApiResponse>(optionsUrl, {
         headers: {

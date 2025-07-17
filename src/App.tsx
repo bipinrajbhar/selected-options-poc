@@ -80,66 +80,71 @@ function App() {
   const [options, setOptions] = useState<Option[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
 
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<Product | null>({
+    id: "prod34521304",
+    displayName: "Sample Product",
+    imageUrl:
+      "https://media.restorationhardware.com/is/image/rhis/prod6490266_E46747666_F_Frank_RHR?$PDP-IS-992$",
+  });
   const [productLoading, setProductLoading] = useState(false);
   const [productError, setProductError] = useState<string | null>(null);
 
   // Fetch product data from REST API
-  useEffect(() => {
-    const fetchProduct = async () => {
-      setProductLoading(true);
-      setProductError(null);
-      try {
-        console.log("Fetching product with ID:", productId);
+  // useEffect(() => {
+  //   const fetchProduct = async () => {
+  //     setProductLoading(true);
+  //     setProductError(null);
+  //     try {
+  //       console.log("Fetching product with ID:", productId);
 
-        // Use different endpoints for development vs production
-        const isDevelopment = import.meta.env.DEV;
-        const productUrl = isDevelopment
-          ? `/products-api/products/v1?ids=${productId}`
-          : `/api/products?ids=${productId}`;
+  //       // Use different endpoints for development vs production
+  //       const isDevelopment = import.meta.env.DEV;
+  //       const productUrl = isDevelopment
+  //         ? `/products-api/products/v1?ids=${productId}`
+  //         : `/api/products?ids=${productId}`;
 
-        const { data } = await axios.get<Product[]>(productUrl, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: false,
-        });
+  //       const { data } = await axios.get<Product[]>(productUrl, {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         withCredentials: false,
+  //       });
 
-        const product = data?.[0];
+  //       const product = data?.[0];
 
-        if (product) {
-          setProduct(product);
-        } else {
-          setProductError("No product found");
-        }
-      } catch (error) {
-        console.error("Error fetching product:", error);
-        if (axios.isAxiosError(error)) {
-          console.error("Axios error details:", {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            url: error.config?.url,
-            data: error.response?.data,
-          });
-          if (error.code === "ERR_NETWORK" || error.message.includes("CORS")) {
-            setProductError(
-              "CORS error: API not accessible from browser. Please check API configuration."
-            );
-          } else {
-            setProductError(
-              `Failed to load product: ${error.response?.status} ${error.response?.statusText}`
-            );
-          }
-        } else {
-          setProductError("Failed to load product");
-        }
-      } finally {
-        setProductLoading(false);
-      }
-    };
+  //       if (product) {
+  //         setProduct(product);
+  //       } else {
+  //         setProductError("No product found");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching product:", error);
+  //       if (axios.isAxiosError(error)) {
+  //         console.error("Axios error details:", {
+  //           status: error.response?.status,
+  //           statusText: error.response?.statusText,
+  //           url: error.config?.url,
+  //           data: error.response?.data,
+  //         });
+  //         if (error.code === "ERR_NETWORK" || error.message.includes("CORS")) {
+  //           setProductError(
+  //             "CORS error: API not accessible from browser. Please check API configuration."
+  //           );
+  //         } else {
+  //           setProductError(
+  //             `Failed to load product: ${error.response?.status} ${error.response?.statusText}`
+  //           );
+  //         }
+  //       } else {
+  //         setProductError("Failed to load product");
+  //       }
+  //     } finally {
+  //       setProductLoading(false);
+  //     }
+  //   };
 
-    fetchProduct();
-  }, [productId]);
+  //   fetchProduct();
+  // }, [productId]);
 
   const fetchOptions = async (selectedOptionIds: string) => {
     setOptionsLoading(true);

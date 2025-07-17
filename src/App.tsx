@@ -96,7 +96,7 @@ function App() {
         const isDevelopment = import.meta.env.DEV;
         const productUrl = isDevelopment
           ? `/products-api/products/v1?ids=${productId}`
-          : `/.netlify/functions/products?productId=${productId}`;
+          : `https://selected-options-poc.vercel.app/products-api/products/v1?ids=${productId}`;
 
         const { data } = await axios.get<Product[]>(productUrl, {
           headers: {
@@ -148,7 +148,7 @@ function App() {
       const isDevelopment = import.meta.env.DEV;
       const optionsUrl = isDevelopment
         ? `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`
-        : `/.netlify/functions/options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
+        : `https://selected-options-poc.vercel.app/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
 
       const response = await axios.get<ApiResponse>(optionsUrl, {
         headers: {

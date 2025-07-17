@@ -80,14 +80,14 @@ function App() {
   const [options, setOptions] = useState<Option[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
 
-  const [product, setProduct] = useState<Product | null>({
+  const [product] = useState<Product | null>({
     id: "prod34521304",
     displayName: "Sample Product",
     imageUrl:
       "https://media.restorationhardware.com/is/image/rhis/prod6490266_E46747666_F_Frank_RHR?$PDP-IS-992$",
   });
-  const [productLoading, setProductLoading] = useState(false);
-  const [productError, setProductError] = useState<string | null>(null);
+  const [productLoading] = useState(false);
+  const [productError] = useState<string | null>(null);
 
   // Fetch product data from REST API
   // useEffect(() => {
@@ -306,15 +306,20 @@ function App() {
                                 className="w-full px-0 py-3 bg-transparent border-b border-gray-300 text-gray-900 font-light focus:border-black focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-body"
                                 disabled={optionsLoading}
                               >
-                                <option value="">Select {type}</option>
-                                {typeOptions.map((option) => (
-                                  <option
-                                    key={option.option_id_s}
-                                    value={option.option_id_s}
-                                  >
-                                    {option.option_value_s}
-                                  </option>
-                                ))}
+                                <option value="">
+                                  {optionsLoading
+                                    ? "Loading..."
+                                    : `Select ${type}`}
+                                </option>
+                                {!optionsLoading &&
+                                  typeOptions.map((option) => (
+                                    <option
+                                      key={option.option_id_s}
+                                      value={option.option_id_s}
+                                    >
+                                      {option.option_value_s}
+                                    </option>
+                                  ))}
                               </select>
                             </div>
                           )

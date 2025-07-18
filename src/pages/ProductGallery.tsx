@@ -16,7 +16,6 @@ interface Hit {
 }
 
 interface FacetsData {
-  brand_ss?: Record<string, number>;
   sku_material_s?: Record<string, number>;
 }
 
@@ -91,33 +90,6 @@ const Facets: React.FC<{
     <div className="facets-container">
       <h3 className="facets-title">Filters</h3>
 
-      {/* Brand Facets */}
-      {facetsData.brand_ss && (
-        <div className="facet-group">
-          <h4 className="facet-type-title">Brand</h4>
-          <div className="facet-options">
-            {Object.entries(facetsData.brand_ss).map(([key, count]) => {
-              const isSelected =
-                selectedFacets.brand_ss?.includes(key) || false;
-              return (
-                <label key={key} className="facet-option">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) =>
-                      onFacetChange("brand_ss", key, e.target.checked)
-                    }
-                  />
-                  <span className="facet-option-label">
-                    {key} ({count})
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Material Facets */}
       {facetsData.sku_material_s && (
         <div className="facet-group">
@@ -182,7 +154,7 @@ const ProductGrid: React.FC<{
           query: search,
           per_page: itemsPerPage.toString(),
           filters: filters,
-          facets: "brand_ss:50 sku_material_s:50",
+          facets: "sku_material_s:50",
           page: currentPage.toString(),
           sort: "_score",
         });

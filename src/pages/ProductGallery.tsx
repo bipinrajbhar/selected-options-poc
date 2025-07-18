@@ -390,8 +390,8 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
   const imgUrl = getImageUrl();
 
   return (
-    <Link
-      to={`/products?productId=${hit._source.product_id_s}`}
+    <div
+      // to={`/products?productId=${hit._source.product_id_s}`}
       className="product-item"
       style={{ textDecoration: "none", color: "inherit" }}
     >
@@ -414,7 +414,7 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
         <div className="placeholder-image" />
       )}
       <div className="product-title">{hit._source.product_name_s}</div>
-    </Link>
+    </div>
   );
 };
 

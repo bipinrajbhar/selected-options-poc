@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import "./ProductGallery.css";
 
@@ -12,6 +12,11 @@ interface Hit {
     images_ss?: string[];
     // other fields can be added as needed
   };
+}
+
+interface FacetsData {
+  brand_ss?: Record<string, number>;
+  sku_material_s?: Record<string, number>;
 }
 
 const API_URL = "https://rbmsoft-search.sigmie.com/api/search";
@@ -68,29 +73,121 @@ const NavBar: React.FC<{ search: string; setSearch: (s: string) => void }> = ({
   );
 };
 
-const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
+const Facets: React.FC<{
+  facetsData: FacetsData | null;
+  selectedFacets: Record<string, string[]>;
+  onFacetChange: (
+    facetType: string,
+    optionId: string,
+    checked: boolean
+  ) => void;
+}> = ({ facetsData, selectedFacets, onFacetChange }) => {
+  if (!facetsData) {
+    return <div className="facets-loading">Loading facets...</div>;
+  }
+
+  return (
+    <div className="facets-container">
+      <h3 className="facets-title">Filters</h3>
+
+      {/* Brand Facets */}
+      {facetsData.brand_ss && (
+        <div className="facet-group">
+          <h4 className="facet-type-title">Brand</h4>
+          <div className="facet-options">
+            {Object.entries(facetsData.brand_ss).map(([key, count]) => {
+              const isSelected =
+                selectedFacets.brand_ss?.includes(key) || false;
+              return (
+                <label key={key} className="facet-option">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) =>
+                      onFacetChange("brand_ss", key, e.target.checked)
+                    }
+                  />
+                  <span className="facet-option-label">
+                    {key} ({count})
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Material Facets */}
+      {facetsData.sku_material_s && (
+        <div className="facet-group">
+          <h4 className="facet-type-title">Material</h4>
+          <div className="facet-options">
+            {Object.entries(facetsData.sku_material_s).map(([key, count]) => {
+              const isSelected =
+                selectedFacets.sku_material_s?.includes(key) || false;
+              return (
+                <label key={key} className="facet-option">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) =>
+                      onFacetChange("sku_material_s", key, e.target.checked)
+                    }
+                  />
+                  <span className="facet-option-label">
+                    {key} ({count})
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ProductGrid: React.FC<{
+  search: string;
+  selectedFacets: Record<string, string[]>;
+  onFacetsDataReceived: (facets: FacetsData) => void;
+}> = ({ search, selectedFacets, onFacetsDataReceived }) => {
   const [hits, setHits] = useState<Hit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalHits, setTotalHits] = useState(0);
-  const itemsPerPage = 12; // Increased from 5 to 12 for better UX
+  const itemsPerPage = 12;
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
+        // Build filters string from selected facets with URL encoding
+        const filters = Object.entries(selectedFacets)
+          .map(([facetType, optionIds]) =>
+            optionIds
+              .map(
+                (optionId) => `${facetType}:"${encodeURIComponent(optionId)}"`
+              )
+              .join(" OR ")
+          )
+          .filter(Boolean)
+          .join(" AND ");
+
         const queryParams = new URLSearchParams({
           query: search,
           per_page: itemsPerPage.toString(),
-          filters: "",
+          filters: filters,
           facets: "brand_ss:50 sku_material_s:50",
           page: currentPage.toString(),
           sort: "_score",
         });
+
         const urlWithParams = `${API_URL}?${queryParams.toString()}`;
+
         const response = await fetch(urlWithParams, {
           method: "POST",
           mode: "cors",
@@ -102,14 +199,19 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
           },
           body: JSON.stringify({}),
         });
+
         if (!response.ok) throw new Error("Network response was not ok");
         const data = await response.json();
         setHits(data.hits || []);
 
-        // Calculate total pages based on total hits
         const total = data.total || 0;
         setTotalHits(total);
         setTotalPages(Math.ceil(total / itemsPerPage));
+
+        // Extract facets data from the response
+        if (data.facets) {
+          onFacetsDataReceived(data.facets);
+        }
       } catch (err: unknown) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
@@ -119,16 +221,15 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       }
     };
     fetchData();
-  }, [search, currentPage]);
+  }, [search, currentPage, selectedFacets]); // Removed onFacetsDataReceived from dependencies
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search or facets change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, selectedFacets]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -140,12 +241,10 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-    // Adjust start page if we're near the end
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
 
-    // Previous button
     pages.push(
       <button
         key="prev"
@@ -157,7 +256,6 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       </button>
     );
 
-    // First page if not visible
     if (startPage > 1) {
       pages.push(
         <button
@@ -180,7 +278,6 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       }
     }
 
-    // Visible page numbers
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
         <button
@@ -197,7 +294,6 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       );
     }
 
-    // Last page if not visible
     if (endPage < totalPages) {
       if (endPage < totalPages - 1) {
         pages.push(
@@ -220,7 +316,6 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       );
     }
 
-    // Next button
     pages.push(
       <button
         key="next"
@@ -241,7 +336,6 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* Results info */}
       {!loading && !error && (
         <div className="results-info mb-4">
           <p className="text-gray-600">
@@ -258,7 +352,6 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
         ))}
       </div>
 
-      {/* Pagination */}
       {!loading && !error && totalPages > 1 && (
         <div className="pagination-container mt-8">
           <nav className="flex justify-center">
@@ -327,12 +420,55 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
 
 const ProductGallery: React.FC = () => {
   const [search, setSearch] = useState("");
+  const [selectedFacets, setSelectedFacets] = useState<
+    Record<string, string[]>
+  >({});
+  const [facetsData, setFacetsData] = useState<FacetsData | null>(null);
+
+  const handleFacetChange = useCallback(
+    (facetType: string, optionId: string, checked: boolean) => {
+      setSelectedFacets((prev) => {
+        const currentOptions = prev[facetType] || [];
+        if (checked) {
+          return {
+            ...prev,
+            [facetType]: [...currentOptions, optionId],
+          };
+        } else {
+          return {
+            ...prev,
+            [facetType]: currentOptions.filter((id) => id !== optionId),
+          };
+        }
+      });
+    },
+    []
+  );
+
+  const handleFacetsDataReceived = useCallback((facets: FacetsData) => {
+    setFacetsData(facets);
+  }, []);
 
   return (
     <div className="bg-white">
       <NavBar search={search} setSearch={setSearch} />
       <div style={{ marginTop: 90 }}>
-        <ProductGrid search={search} />
+        <div className="content-layout">
+          <aside className="facets-sidebar">
+            <Facets
+              facetsData={facetsData}
+              selectedFacets={selectedFacets}
+              onFacetChange={handleFacetChange}
+            />
+          </aside>
+          <main className="products-main">
+            <ProductGrid
+              search={search}
+              selectedFacets={selectedFacets}
+              onFacetsDataReceived={handleFacetsDataReceived}
+            />
+          </main>
+        </div>
       </div>
     </div>
   );

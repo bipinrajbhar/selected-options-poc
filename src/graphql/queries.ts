@@ -28,3 +28,33 @@ export const GET_PRODUCT = gql`
     }
   }
 `;
+
+export const GET_PRODUCT_IMAGE = gql`
+  query ProductImage(
+    $productId: String!
+    $imageKey: String
+    $fullSkuId: String
+    $swatchIds: [String!]
+    $selectedOptionIds: [String!]
+    $siteId: String
+    $locale: String
+    $newPDPLayout: Boolean
+    $screen: String
+  ) {
+    productImage(
+      productId: $productId
+      imageKey: $imageKey
+      fullSkuId: $fullSkuId
+      swatchIds: $swatchIds
+      selectedOptionIds: $selectedOptionIds
+      siteId: $siteId
+      locale: $locale
+      newPDPLayout: $newPDPLayout
+      screen: $screen
+    ) {
+      productId
+      imageUrl
+      __typename
+    }
+  }
+`;

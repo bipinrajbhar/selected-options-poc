@@ -13,16 +13,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      "/products-api": {
-        target: "https://rh.com",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/products-api/, "/rh/api"),
-      },
-      // Proxy for Netlify functions in development
-      "/.netlify/functions": {
-        target: "http://localhost:8888",
-        changeOrigin: true,
-      },
     },
   },
   build: {

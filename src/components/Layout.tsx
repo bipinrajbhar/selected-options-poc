@@ -11,11 +11,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <header className="border-b border-gray-200">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* RBMSoft Logo */}
-            <div className="flex items-center">
-              <div className="text-2xl font-bold text-gray-900">RBMSoft</div>
-            </div>
-
             {/* Mobile menu button */}
             <div className="md:hidden">
               <button

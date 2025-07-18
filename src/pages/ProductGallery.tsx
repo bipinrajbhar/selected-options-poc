@@ -388,6 +388,7 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
       ) : (
         <div className="placeholder-image" />
       )}
+      <div className="product-name">{hit._source.product_name_s}</div>
     </div>
   );
 };

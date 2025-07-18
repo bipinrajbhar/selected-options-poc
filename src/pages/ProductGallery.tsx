@@ -65,7 +65,7 @@ const NavBar: React.FC<{ search: string; setSearch: (s: string) => void }> = ({
             onKeyDown={handleKeyDown}
           />
         </div>
-        <div className="nav-logo">RBM</div>
+        <div className="nav-logo">RBMSoft</div>
       </div>
     </header>
   );

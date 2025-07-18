@@ -17,7 +17,58 @@ interface Hit {
 const API_URL = "https://rbmsoft-search.sigmie.com/api/search";
 const TOKEN = "2|QMEo8Og6JRgqXpqjFwx82QxPEEXeXl7tkxvQqZ4ad880fdf9";
 
-const ProductGrid: React.FC = () => {
+const NavBar: React.FC<{ search: string; setSearch: (s: string) => void }> = ({
+  search,
+  setSearch,
+}) => {
+  const [input, setInput] = React.useState(search);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      setSearch(input);
+    }
+  };
+  return (
+    <header className="main-nav">
+      <div className="main-nav-content">
+        <div className="search-bar-container">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="search-icon"
+          >
+            <circle
+              cx="11.5"
+              cy="9.88"
+              r="7.18"
+              stroke="currentColor"
+              strokeWidth="0.75"
+            />
+            <line
+              x1="16.57"
+              y1="15.11"
+              x2="21.92"
+              y2="20.46"
+              stroke="currentColor"
+              strokeWidth="0.75"
+            />
+          </svg>
+          <input
+            className="search-bar-input"
+            type="text"
+            placeholder="Search..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
   const [hits, setHits] = useState<Hit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +83,7 @@ const ProductGrid: React.FC = () => {
       setError(null);
       try {
         const queryParams = new URLSearchParams({
-          query: "",
+          query: search,
           per_page: itemsPerPage.toString(),
           filters: "",
           facets: "brand_ss:50 sku_material_s:50",
@@ -68,7 +119,12 @@ const ProductGrid: React.FC = () => {
       }
     };
     fetchData();
-  }, [currentPage]);
+  }, [search, currentPage]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -270,10 +326,13 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
 };
 
 const ProductGallery: React.FC = () => {
+  const [search, setSearch] = useState("");
+
   return (
     <div className="bg-white">
-      <div style={{ marginTop: 20 }}>
-        <ProductGrid />
+      <NavBar search={search} setSearch={setSearch} />
+      <div style={{ marginTop: 90 }}>
+        <ProductGrid search={search} />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ interface Hit {
     image_url_s?: string;
     image_urls_ss?: string[];
     images_ss?: string[];
+    product_image_s?: string;
     // other fields can be added as needed
   };
 }
@@ -365,40 +366,17 @@ const ProductGrid: React.FC<{
 
 // Updated component for each product item without GraphQL query
 const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
-  // Get image URL from the available fields in the API response
-  const getImageUrl = () => {
-    const source = hit._source;
-
-    // Try image_url_s first (single image URL)
-    if (source.image_url_s) {
-      return source.image_url_s;
-    }
-
-    // Try image_urls_ss (array of image URLs)
-    if (source.image_urls_ss && source.image_urls_ss.length > 0) {
-      return source.image_urls_ss[0];
-    }
-
-    // Try images_ss (array of image URLs)
-    if (source.images_ss && source.images_ss.length > 0) {
-      return source.images_ss[0];
-    }
-
-    return null;
-  };
-
-  const imgUrl = getImageUrl();
-
   return (
     <div
       // to={`/products?productId=${hit._source.product_id_s}`}
       className="product-item"
       style={{ textDecoration: "none", color: "inherit" }}
     >
-      {imgUrl ? (
+      {hit._source.product_image_s ? (
         <img
-          src={imgUrl}
+          // src={imgUrl}
           alt={hit._source.product_name_s}
+          src={`https://media.restorationhardware.com/is/image/rhis/${hit._source.product_image_s}`}
           className="product-image"
           style={{
             width: 200,
@@ -406,14 +384,10 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
             objectFit: "contain",
             borderRadius: 4,
           }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
         />
       ) : (
         <div className="placeholder-image" />
       )}
-      <div className="product-title">{hit._source.product_name_s}</div>
     </div>
   );
 };

@@ -1,7 +1,5 @@
 import { useQueryState } from "nuqs";
 import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_PRODUCT } from "../graphql/queries";
 import axios from "axios";
 import { Link } from "react-router-dom";
 
@@ -29,6 +27,14 @@ interface OptionBucket {
   };
 }
 
+interface ProductData {
+  is_bundle_product_i: number | null;
+  option_id_ss: string[] | null;
+  option_override_sequence_ss: string[];
+  product_image_s: string;
+  product_name_s: string;
+}
+
 interface ApiResponse {
   options_detail: {
     aggregations: {
@@ -44,6 +50,13 @@ interface ApiResponse {
       }>;
     };
   };
+  product_response: {
+    hits: {
+      hits: Array<{
+        _source: ProductData;
+      }>;
+    };
+  };
 }
 
 const Products: React.FC = () => {
@@ -51,6 +64,7 @@ const Products: React.FC = () => {
     defaultValue: "prod34521304",
   });
   const [sku, setSku] = useState<string | null>(null);
+  const [productData, setProductData] = useState<ProductData | null>(null);
 
   console.log({ productId });
 
@@ -77,28 +91,6 @@ const Products: React.FC = () => {
 
   const [options, setOptions] = useState<Option[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
-
-  // GraphQL query for product data
-  const {
-    data: productData,
-    loading: productLoading,
-    error: productError,
-  } = useQuery(GET_PRODUCT, {
-    variables: {
-      productId,
-      filter: null,
-      userType: "ANONYMOUS",
-      siteId: "RH",
-      currencyCode: "USA",
-      measureSystem: "metrics",
-      locale: "en-US",
-      postalCode: "94925",
-      countryCode: "US",
-    },
-    skip: !productId,
-  });
-
-  const product = productData?.product;
 
   const fetchOptions = async (selectedOptionIds: string) => {
     setOptionsLoading(true);
@@ -133,6 +125,12 @@ const Products: React.FC = () => {
         setSku(hits[0]?._source?.id);
       }
 
+      // Extract product data from product_response
+      const productHits = response.data?.product_response?.hits?.hits;
+      if (productHits && productHits.length > 0) {
+        setProductData(productHits[0]._source);
+      }
+
       setOptions(allOptions);
     } catch (error) {
       console.error("Error fetching options:", error);
@@ -165,71 +163,6 @@ const Products: React.FC = () => {
     setSelectedOptionIds(allSelectedIds);
   };
 
-  if (productLoading) {
-    return (
-      <div className="bg-white flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="text-center space-y-6">
-          <div className="w-12 h-12 border-2 border-gray-300 border-black rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600 font-light text-lg font-body">
-            Loading...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (productError) {
-    return (
-      <div className="bg-white flex items-center justify-center p-8 min-h-[calc(100vh-4rem)]">
-        <div className="text-center space-y-8 max-w-lg">
-          <h2 className="text-3xl font-light text-gray-900 font-display">
-            Product Unavailable
-          </h2>
-          <p className="text-gray-600 font-light text-lg leading-relaxed font-body">
-            {productError?.message || "Failed to load product"}
-          </p>
-          <div className="space-x-4">
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center justify-center bg-black text-white px-8 py-3 text-sm font-medium hover:bg-gray-800 transition-colors font-body"
-            >
-              Try Again
-            </button>
-            <Link
-              to="/product-gallery"
-              className="inline-flex items-center justify-center border border-gray-300 text-gray-900 px-8 py-3 text-sm font-medium hover:bg-gray-50 transition-colors font-body"
-            >
-              Back to Gallery
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="bg-white flex items-center justify-center p-8 min-h-[calc(100vh-4rem)]">
-        <div className="text-center space-y-8 max-w-lg">
-          <h2 className="text-3xl font-light text-gray-900 font-display">
-            Product Not Found
-          </h2>
-          <p className="text-gray-600 font-light text-lg leading-relaxed font-body">
-            The requested product could not be located.
-          </p>
-          <div className="space-x-4">
-            <Link
-              to="/product-gallery"
-              className="inline-flex items-center justify-center bg-black text-white px-8 py-3 text-sm font-medium hover:bg-gray-800 transition-colors font-body"
-            >
-              Back to Gallery
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white">
       <div className="max-w-7xl mx-auto">
@@ -249,14 +182,20 @@ const Products: React.FC = () => {
           {/* Product Details Section - RH Style */}
           <div className="flex items-start justify-center p-8 lg:p-16 space-y-12 gap-10">
             {/* Product Title */}
-            <img
-              className="aspect-square object-contain shrink-0 w-96"
-              src={product.imageUrl}
-              alt={product.displayName}
-            />
+            {productData?.product_image_s ? (
+              <img
+                className="aspect-square object-contain shrink-0 w-96"
+                src={`https://media.restorationhardware.com/is/image/rhis/${productData.product_image_s}`}
+                alt={productData.product_name_s}
+              />
+            ) : (
+              <div className="aspect-square object-contain shrink-0 w-96 bg-gray-100 flex items-center justify-center">
+                <span className="text-gray-500">Product Image</span>
+              </div>
+            )}
             <div className="space-y-6">
               <h1 className="text-4xl lg:text-5xl font-light text-gray-900 leading-tight tracking-wide font-display mb-10">
-                {product.displayName}
+                {productData?.product_name_s || "Product Options"}
               </h1>
               {/* Product Options */}
               <div className="space-y-8">

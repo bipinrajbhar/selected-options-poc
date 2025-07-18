@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLazyQuery } from "@apollo/client";
 import { Link } from "react-router-dom";
-import { GET_PRODUCT_IMAGE } from "../graphql/queries";
 import "./ProductGallery.css";
 
 interface Hit {
@@ -19,58 +17,7 @@ interface Hit {
 const API_URL = "https://rbmsoft-search.sigmie.com/api/search";
 const TOKEN = "2|QMEo8Og6JRgqXpqjFwx82QxPEEXeXl7tkxvQqZ4ad880fdf9";
 
-const NavBar: React.FC<{ search: string; setSearch: (s: string) => void }> = ({
-  search,
-  setSearch,
-}) => {
-  const [input, setInput] = React.useState(search);
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      setSearch(input);
-    }
-  };
-  return (
-    <header className="main-nav">
-      <div className="main-nav-content">
-        <div className="search-bar-container">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="search-icon"
-          >
-            <circle
-              cx="11.5"
-              cy="9.88"
-              r="7.18"
-              stroke="currentColor"
-              strokeWidth="0.75"
-            />
-            <line
-              x1="16.57"
-              y1="15.11"
-              x2="21.92"
-              y2="20.46"
-              stroke="currentColor"
-              strokeWidth="0.75"
-            />
-          </svg>
-          <input
-            className="search-bar-input"
-            type="text"
-            placeholder="Search..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-      </div>
-    </header>
-  );
-};
-
-const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
+const ProductGrid: React.FC = () => {
   const [hits, setHits] = useState<Hit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +32,7 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       setError(null);
       try {
         const queryParams = new URLSearchParams({
-          query: search,
+          query: "",
           per_page: itemsPerPage.toString(),
           filters: "",
           facets: "brand_ss:50 sku_material_s:50",
@@ -121,12 +68,7 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
       }
     };
     fetchData();
-  }, [search, currentPage]);
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
+  }, [currentPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -272,53 +214,37 @@ const ProductGrid: React.FC<{ search: string }> = ({ search }) => {
   );
 };
 
-// New component for each product item to handle async image fetching
+// Updated component for each product item without GraphQL query
 const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
-  const [imgUrl, setImgUrl] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
+  // Get image URL from the available fields in the API response
+  const getImageUrl = () => {
+    const source = hit._source;
 
-  const [getProductImage] = useLazyQuery(GET_PRODUCT_IMAGE, {
-    onCompleted: (data) => {
-      const imageUrl = data?.productImage?.imageUrl;
-      if (imageUrl) {
-        let url = imageUrl;
-        if (url.startsWith("//")) url = "https:" + url;
-        setImgUrl(url);
-      } else {
-        setImgUrl(null);
-      }
-      setLoading(false);
-    },
-    onError: () => {
-      setImgUrl(null);
-      setLoading(false);
-    },
-  });
+    // Try image_url_s first (single image URL)
+    if (source.image_url_s) {
+      return source.image_url_s;
+    }
 
-  React.useEffect(() => {
-    if (!hit._source.product_id_s) return;
+    // Try image_urls_ss (array of image URLs)
+    if (source.image_urls_ss && source.image_urls_ss.length > 0) {
+      return source.image_urls_ss[0];
+    }
 
-    setLoading(true);
-    getProductImage({
-      variables: {
-        productId: hit._source.product_id_s,
-        siteId: "RH",
-        locale: "en-US",
-        selectedOptionIds: [],
-      },
-    });
-  }, [hit._source.product_id_s, getProductImage]);
+    // Try images_ss (array of image URLs)
+    if (source.images_ss && source.images_ss.length > 0) {
+      return source.images_ss[0];
+    }
+
+    return null;
+  };
+
+  const imgUrl = getImageUrl();
 
   return (
     <Link
       to={`/products?productId=${hit._source.product_id_s}`}
       className="product-item"
       style={{ textDecoration: "none", color: "inherit" }}
-      onClick={(e) => {
-        if (loading) {
-          e.preventDefault();
-        }
-      }}
     >
       {imgUrl ? (
         <img
@@ -344,13 +270,10 @@ const ProductGridItem: React.FC<{ hit: Hit }> = ({ hit }) => {
 };
 
 const ProductGallery: React.FC = () => {
-  const [search, setSearch] = useState("");
-
   return (
     <div className="bg-white">
-      <NavBar search={search} setSearch={setSearch} />
-      <div style={{ marginTop: 90 }}>
-        <ProductGrid search={search} />
+      <div style={{ marginTop: 20 }}>
+        <ProductGrid />
       </div>
     </div>
   );

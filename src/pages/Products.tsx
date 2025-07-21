@@ -146,10 +146,13 @@ const Products: React.FC = () => {
   );
 
   // Fetch options from the API
+  const selectedOptions = Object.values(selectedOptionsByType)
+    .filter(Boolean)
+    .join(",");
 
   useEffect(() => {
-    fetchOptions(selectedOptionIds.filter(Boolean).join(","));
-  }, [fetchOptions, selectedOptionIds]);
+    fetchOptions(selectedOptions);
+  }, [fetchOptions, selectedOptions]);
 
   useEffect(() => {
     console.log("selectedOptionIds", selectedOptionIds);

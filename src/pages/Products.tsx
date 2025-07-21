@@ -2,6 +2,7 @@ import { useQueryState } from "nuqs";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import React from "react";
 
 // Product interface is now defined by GraphQL schema
 
@@ -71,7 +72,9 @@ const Products: React.FC = () => {
   const [selectedOptionIds, setSelectedOptionIds] = useQueryState("optionIds", {
     defaultValue: [],
     parse: (value) => value.split(",").filter(Boolean),
-    serialize: (value) => value.join(","),
+    serialize: (value) => {
+      return value.filter(Boolean).join(",");
+    },
   });
 
   const [selectedOptionsByType, setSelectedOptionsByType] = useQueryState(
@@ -92,58 +95,61 @@ const Products: React.FC = () => {
   const [options, setOptions] = useState<Option[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
 
-  const fetchOptions = async (selectedOptionIds: string) => {
-    setOptionsLoading(true);
-    try {
-      // Use different endpoints for development vs production
-      const optionsUrl = `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
+  const fetchOptions = React.useCallback(
+    async (selectedOptionIds: string) => {
+      setOptionsLoading(true);
+      try {
+        // Use different endpoints for development vs production
+        const optionsUrl = `/api/ng-all-options?productId=${productId}&selectedOptions=${selectedOptionIds}`;
 
-      const response = await axios.get<ApiResponse>(optionsUrl, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: false,
-      });
-
-      // Extract options from the nested response structure
-      const allOptions: Option[] = [];
-      const buckets =
-        response.data?.options_detail?.aggregations?.by_type?.buckets || [];
-
-      buckets?.forEach((bucket) => {
-        const bucketOptions = bucket?.options?.hits?.hits || [];
-        bucketOptions?.forEach((hit) => {
-          if (hit?.status !== "unavailable") {
-            allOptions.push(hit._source);
-          }
+        const response = await axios.get<ApiResponse>(optionsUrl, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: false,
         });
-      });
 
-      const hits = response.data?.sku_response?.hits?.hits;
+        // Extract options from the nested response structure
+        const allOptions: Option[] = [];
+        const buckets =
+          response.data?.options_detail?.aggregations?.by_type?.buckets || [];
 
-      if (hits?.length <= 3) {
-        setSku(hits[0]?._source?.id);
+        buckets?.forEach((bucket) => {
+          const bucketOptions = bucket?.options?.hits?.hits || [];
+          bucketOptions?.forEach((hit) => {
+            if (hit?.status !== "unavailable") {
+              allOptions.push(hit._source);
+            }
+          });
+        });
+
+        const hits = response.data?.sku_response?.hits?.hits;
+
+        if (hits?.length <= 3) {
+          setSku(hits[0]?._source?.id);
+        }
+
+        // Extract product data from product_response
+        const productHits = response.data?.product_response?.hits?.hits;
+        if (productHits && productHits.length > 0) {
+          setProductData(productHits[0]._source);
+        }
+
+        setOptions(allOptions);
+      } catch (error) {
+        console.error("Error fetching options:", error);
+      } finally {
+        setOptionsLoading(false);
       }
-
-      // Extract product data from product_response
-      const productHits = response.data?.product_response?.hits?.hits;
-      if (productHits && productHits.length > 0) {
-        setProductData(productHits[0]._source);
-      }
-
-      setOptions(allOptions);
-    } catch (error) {
-      console.error("Error fetching options:", error);
-    } finally {
-      setOptionsLoading(false);
-    }
-  };
+    },
+    [productId]
+  );
 
   // Fetch options from the API
-  const selectedOptions = Object.values(selectedOptionsByType).join(",");
+
   useEffect(() => {
-    fetchOptions(selectedOptions);
-  }, [selectedOptions]);
+    fetchOptions(selectedOptionIds.filter(Boolean).join(","));
+  }, [fetchOptions, selectedOptionIds]);
 
   useEffect(() => {
     console.log("selectedOptionIds", selectedOptionIds);
